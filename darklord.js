@@ -1,15 +1,17 @@
 // darklord is an Adobe Illustrator script that creates dark mode copies of your artboards based on a color mapping. 
-// Copyright (c) 2022 SPIEGEL-Verlag Rudolf Augstein GmbH & Co. KG
+// Copyright (c) 2022-2023 SPIEGEL-Verlag Rudolf Augstein GmbH & Co. KG
+// 
+// https://spiegel.de
+// https://github.com/spiegelgraphics
 //
-// This script uses code taken from the ai2html script by The New York Times, https://github.com/newsdev
+//
+// This script contains code taken from the ai2html script by The New York Times, https://github.com/newsdev
 // Copyright (c) 2011-2018 The New York Times Company
 //
-// This script uses code originally written by Markus Ekholm, https://github.com/markusn
+// This script contains code originally written by Markus Ekholm, https://github.com/markusn
 // Copyright (c) 2012-2016, Markus Ekholm
 //
-// This script uses code originally written by Sergey Osokin, https://github.com/creold 
-//
-// Thank You!
+// This script contains code originally written by Sergey Osokin, https://github.com/creold 
 //
 // =====================================
 // License
@@ -27,13 +29,16 @@
 // How to install darklord
 // =====================================
 //
-// - Move the darklord.js file into the Illustrator folder where scripts are located.
-// - For example, on Mac OS X running Adobe Illustrator CC 2022, the path would be: // Adobe Illustrator CC 2014/Presets/en_US/Scripts/darklord-spiegel.js
+// - Move the darklord.js file into the Illustrator scripts directory.
+// - For example, on Mac OS X running Adobe Illustrator CC 2022, the path would be: // Adobe Illustrator CC 2022/Presets/en_US/Scripts/darklord.js
+// - Create a custom color mapping by copying or adapring the darklord-colormap.json file from this repository.
+// - Save the darklord-colormap.json file to the Illustrator scripts directory.
+// - Restart Illustrator
 
 
 function main(){
 
-    var scriptVersion = "0.2.1";
+    var scriptVersion = "0.3.1";
 
     var defaultSettings = {
         "settings_version": scriptVersion,
@@ -42,9 +47,6 @@ function main(){
         "show_completion_dialog_box": true,
         "background_layer_name": "darklord-bg"
     };
-
-    // TODO counter is used for testing; remove before flight
-    var counter = 0;
 
     var feedback = [];
     var warnings = [];
@@ -381,7 +383,7 @@ function main(){
         alertText += makeList(feedback, "Information", "Information");
         alertText += "\n";
 
-        alertText += rule + "darklord-spiegel v" + scriptVersion;
+        alertText += rule + "darklord v" + scriptVersion;
         alert(alertHed + alertText);
 
         function makeList(items, singular, plural) {
@@ -531,22 +533,53 @@ function main(){
         }
     }
 
-    function getDarkTargetLayer(layer){
-        var targetLayer;
-        try{
-            targetLayer = doc.layers.getByName(docSettings.darkmode_ab_prefix + layer.name);
+    /**
+     * Searches the document tree for a layer with the given name, starting at the given parent
+     * @param {string} layerName The name of the layer to find
+     * @param {object} parent The layer to start searching from
+     * @returns {object} The layer object or null if not found
+     */
+    function findLayer(layerName, parent) {
+        var layer = null;
+        if(!parent) {
+            parent = doc;
         }
-        catch(e){
+        for (var i = 0; i < parent.layers.length; i++) {
+            if (parent.layers[i].layers.length > 0) {
+                layer = findLayer(layerName, parent.layers[i]);
+                if (layer) {
+                    break;
+                }
+            }
+            if (parent.layers[i].name == layerName) {
+                layer = parent.layers[i];
+                break;
+            }
+        }
+        return layer;
+    }
+
+    /**
+     * Finds the dark mode target layer for the given element. If the layer is not present, it will be created at the correct position in the document tree.
+     * @param {object} elem The element to find the dark mode target layer for
+     * @returns {object} The dark mode target layer
+     */
+    function getDarkmodeTargetLayer(elem){
+        if(elem.parent.typename == "Document") {
+            return elem.parent;
+        }
+        var targetLayer = findLayer(docSettings.darkmode_ab_prefix + elem.parent.name);
+        if(!targetLayer) {
             targetLayer = doc.layers.add();
-            targetLayer.name = docSettings.darkmode_ab_prefix + layer.name;
-            // TODO correctly mirror nested layer structures
-            // if(layer.parent.typename == 'Layer'){
-            //     targetLayer.move(getDarkTargetLayer(layer.parent), ElementPlacement.PLACEAFTER);
-            // }
-            // else{
-            //     targetLayer.move(layer, ElementPlacement.PLACEAFTER);
-            // }
-            targetLayer.move(layer, ElementPlacement.PLACEAFTER);
+            targetLayer.name = docSettings.darkmode_ab_prefix + elem.parent.name;
+            targetLayer.blendingMode = elem.parent.blendingMode
+            if(elem.parent.typename == "Layer") {
+                var darkTargetParent = getDarkmodeTargetLayer(elem.parent);
+                targetLayer.move(darkTargetParent, ElementPlacement.PLACEATBEGINNING);
+            }
+            else {
+                targetLayer.move(elem, ElementPlacement.INSIDE);
+            }
         }
         return targetLayer;
     }
@@ -558,17 +591,26 @@ function main(){
      */
     function getDuplicates(collection) {
         var arr = [];
-        for (var i = 0, len = collection.length; i < len; i++) {
+        // for (var i = 0, len = collection.length; i < len; i++) {
+        for (var i = collection.length - 1; i >= 0; i--) {
             var dup = collection[i].duplicate();
-            // TODO: mirror layer structure for darkmode elements
-            // var targetLayer = getDarkTargetLayer(collection[i].layer);
-            // dup.move(targetLayer, ElementPlacement.PLACEATEND);
+            var targetLayer = getDarkmodeTargetLayer(collection[i]);
+            dup.move(targetLayer, ElementPlacement.INSIDE);
+            // if(collection[i].clipping) {
+            //     dup.clipping = true;
+            //     targetLayer.clipped = true;
+            // }
             arr.push(dup);
         }
         return arr;
     }
 
-    function getDarkColor(color){
+    /**
+     * Find the matching dark mode color from the color mapping using the CIEDE2000 algorithm
+     * @param {array} color an array shaped [r,g,b] containing RGB values
+     * @returns {array} An array shaped [r,g,b] containing RGB values
+     */
+    function getDarkmodeColor(color){
         var rgb, darkColor;
         rgb = darkColor = aiColorToRGBArray(color);
         if (rgb == null){
@@ -579,7 +621,6 @@ function main(){
             darkColor = documentColorMapping[rgb];
         }
         else {
-            counter++;
             for (var i = 0; i < colorMapping.length; i++) {
                 var c = hexToRGB(colorMapping[i].light);
                 var diff = deltaE00(c, rgb);
@@ -609,15 +650,15 @@ function main(){
                             var ps = collection[i].textRange.paragraphs;
                             for (var j = 0; j < ps.length; j++) {
                                 if(ps[j].characters.length > 0){
-                                    ps[j].fillColor = getDarkColor(ps[j].fillColor);
-                                    ps[j].strokeColor = getDarkColor(ps[j].strokeColor);
+                                    ps[j].fillColor = getDarkmodeColor(ps[j].fillColor);
+                                    ps[j].strokeColor = getDarkmodeColor(ps[j].strokeColor);
                                 }
                             }
                         }
                         break;
                     case 'PathItem':
-                        collection[i].fillColor = getDarkColor(collection[i].fillColor);
-                        collection[i].strokeColor = getDarkColor(collection[i].strokeColor);
+                        collection[i].fillColor = getDarkmodeColor(collection[i].fillColor);
+                        collection[i].strokeColor = getDarkmodeColor(collection[i].strokeColor);
                         break;
                     case 'CompoundPathItem':
                         recolorArtwork(collection[i].pathItems);
@@ -636,7 +677,7 @@ function main(){
     /**
      * Converts a HEX RGB string to decimal RGB values
      * @param {string} hex A HEX Color string #RRGGBB or RRBBGG
-     * @returns An array shaped [r,g,b] containing decimal RGB color values
+     * @returns {array} An array shaped [r,g,b] containing decimal RGB color values
      */
     function hexToRGB(hex) {
         var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -957,6 +998,7 @@ function main(){
 
         if(darkmodeArtboards.length > 0){
             if(!confirm("Warning!\nProceeding recreates all darkmode artwork, discarding all changes made to the previously generated darkmode versions of your graphics.\n\nDo you want to continue?")) {
+                error("Cancelled by user");
                 return;
             }
             // reset start time after awaiting user input
@@ -986,7 +1028,7 @@ function main(){
             doc.selectObjectsOnActiveArtboard();
             var abItems = doc.selection;
             try {
-                duplicateArtboard(i, abItems, offset, 'dark-', i)
+                duplicateArtboard(i, abItems, offset, docSettings.darkmode_ab_prefix, i)
             } catch (e) {
                 alert(e);
             }
@@ -997,9 +1039,6 @@ function main(){
             doc.views[0].screenMode = userView;
             app.userInteractionLevel = UserInteractionLevel.DISPLAYALERTS;
         });
-        
-        // TODO counter is used for testing; remove before flight
-        warn("documentColorMap extended: " + counter.toString());
     }
 }
 
