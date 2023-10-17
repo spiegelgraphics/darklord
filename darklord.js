@@ -37,17 +37,19 @@
 
 
 function main(){
-
-    var scriptVersion = "0.3.1";
-
+    
+    var scriptVersion = "0.4.1";
+    
     var defaultSettings = {
         "settings_version": scriptVersion,
         "darkmode_background": "#1F1E1C",
         "darkmode_ab_prefix": "dark-",
         "show_completion_dialog_box": true,
-        "background_layer_name": "darklord-bg"
+        "background_layer_name": "darklord-bg",
+        "dynamic_colors": false,
+        "tolerance": 3 // see http://zschuessler.github.io/DeltaE/learn/
     };
-
+    
     var feedback = [];
     var warnings = [];
     var errors   = [];
@@ -61,9 +63,7 @@ function main(){
     var lKey = '%isLocked';
     var hKey = '%isHidden';
     var offset = 50;
-    // TODO move tolerance to settings text block
-    var tolerance = 3; // tolerance value based on http://zschuessler.github.io/DeltaE/learn/
-
+    
     try {
         if (!app.documents.length) {
             error('No documents are open');
@@ -78,16 +78,16 @@ function main(){
             // TODO: find a better way to detect this condition (mask can be renamed)
             error('darklord is unable to run because you are editing an Opacity Mask.');
         }
-
+        
         initJSON();
-
+        
         doc = app.activeDocument;
         docPath = doc.path + "/";
         scriptDir = getFileDirectory($.fileName);
-
+        
         docSettings = initSpecialTextBlocks();
         docSettings = initDocumentSettings(docSettings);
-
+        
         colorMapping = readColormap(scriptDir + "/darklord-colormap.json");
         
         runDarklord();
@@ -95,7 +95,7 @@ function main(){
     catch(e) {
         errors.push(formatError(e));
     }
-
+    
     if (errors.length > 0) {
         showCompletionAlert();
     }
@@ -103,13 +103,13 @@ function main(){
         message('Script ran in', ((+new Date() - startTime) / 1000).toFixed(1), 'seconds');
         showCompletionAlert();
     }
-
+    
     function forEach(arr, cb) {
         for (var i=0, n=arr.length; i<n; i++) {
             cb(arr[i], i);
         }
     }
-
+    
     function filter(arr, test) {
         var filtered = [];
         for (var i=0, n=arr.length; i<n; i++) {
@@ -119,7 +119,7 @@ function main(){
         }
         return filtered;
     }
-
+    
     function extend(o) {
         for (var i=1; i<arguments.length; i++) {
             forEachProperty(arguments[i], add);
@@ -129,7 +129,7 @@ function main(){
         }
         return o;
     }
-
+    
     function forEachProperty(o, cb) {
         for (var k in o) {
             if (o.hasOwnProperty(k)) {
@@ -137,7 +137,7 @@ function main(){
             }
         }
     }
-
+    
     function trim(s) {
         return s.replace(/^[\s\uFEFF\xA0\x03]+|[\s\uFEFF\xA0\x03]+$/g, '');
     }
@@ -148,12 +148,12 @@ function main(){
         // eslint-disable-next-line
         if(typeof JSON!=="object"){JSON={}}(function(){"use strict";var rx_one=/^[\],:{}\s]*$/;var rx_two=/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g;var rx_three=/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g;var rx_four=/(?:^|:|,)(?:\s*\[)+/g;var rx_escapable=/[\\"\u0000-\u001f\u007f-\u009f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g;var rx_dangerous=/[\u0000\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g;function f(n){return n<10?"0"+n:n}function this_value(){return this.valueOf()}if(typeof Date.prototype.toJSON!=="function"){Date.prototype.toJSON=function(){return isFinite(this.valueOf())?this.getUTCFullYear()+"-"+f(this.getUTCMonth()+1)+"-"+f(this.getUTCDate())+"T"+f(this.getUTCHours())+":"+f(this.getUTCMinutes())+":"+f(this.getUTCSeconds())+"Z":null};Boolean.prototype.toJSON=this_value;Number.prototype.toJSON=this_value;String.prototype.toJSON=this_value}var gap;var indent;var meta;var rep;function quote(string){rx_escapable.lastIndex=0;return rx_escapable.test(string)?'"'+string.replace(rx_escapable,function(a){var c=meta[a];return typeof c==="string"?c:"\\u"+("0000"+a.charCodeAt(0).toString(16)).slice(-4)})+'"':'"'+string+'"'}function str(key,holder){var i;var k;var v;var length;var mind=gap;var partial;var value=holder[key];if(value&&typeof value==="object"&&typeof value.toJSON==="function"){value=value.toJSON(key)}if(typeof rep==="function"){value=rep.call(holder,key,value)}switch(typeof value){case"string":return quote(value);case"number":return isFinite(value)?String(value):"null";case"boolean":case"null":return String(value);case"object":if(!value){return"null"}gap+=indent;partial=[];if(Object.prototype.toString.apply(value)==="[object Array]"){length=value.length;for(i=0;i<length;i+=1){partial[i]=str(i,value)||"null"}v=partial.length===0?"[]":gap?"[\n"+gap+partial.join(",\n"+gap)+"\n"+mind+"]":"["+partial.join(",")+"]";gap=mind;return v}if(rep&&typeof rep==="object"){length=rep.length;for(i=0;i<length;i+=1){if(typeof rep[i]==="string"){k=rep[i];v=str(k,value);if(v){partial.push(quote(k)+(gap?": ":":")+v)}}}}else{for(k in value){if(Object.prototype.hasOwnProperty.call(value,k)){v=str(k,value);if(v){partial.push(quote(k)+(gap?": ":":")+v)}}}}v=partial.length===0?"{}":gap?"{\n"+gap+partial.join(",\n"+gap)+"\n"+mind+"}":"{"+partial.join(",")+"}";gap=mind;return v}}if(typeof JSON.stringify!=="function"){meta={"\b":"\\b","\t":"\\t","\n":"\\n","\f":"\\f","\r":"\\r",'"':'\\"',"\\":"\\\\"};JSON.stringify=function(value,replacer,space){var i;gap="";indent="";if(typeof space==="number"){for(i=0;i<space;i+=1){indent+=" "}}else if(typeof space==="string"){indent=space}rep=replacer;if(replacer&&typeof replacer!=="function"&&(typeof replacer!=="object"||typeof replacer.length!=="number")){throw new Error("JSON.stringify")}return str("",{"":value})}}if(typeof JSON.parse!=="function"){JSON.parse=function(text,reviver){var j;function walk(holder,key){var k;var v;var value=holder[key];if(value&&typeof value==="object"){for(k in value){if(Object.prototype.hasOwnProperty.call(value,k)){v=walk(value,k);if(v!==undefined){value[k]=v}else{delete value[k]}}}}return reviver.call(holder,key,value)}text=String(text);rx_dangerous.lastIndex=0;if(rx_dangerous.test(text)){text=text.replace(rx_dangerous,function(a){return"\\u"+("0000"+a.charCodeAt(0).toString(16)).slice(-4)})}if(rx_one.test(text.replace(rx_two,"@").replace(rx_three,"]").replace(rx_four,""))){j=eval("("+text+")");return typeof reviver==="function"?walk({"":j},""):j}throw new SyntaxError("JSON.parse")}}})(); // jshint ignore:line
     }
-
+    
     /**
-     * Gets an array representing the RGB values of an Illustrator color object. NoColor is returned as null.
-     * @param {Color} color An Illustrator color object of either type SpotColor, RGBColor, GrayColor or NoColor
-     * @returns An array [r,g,b] containing the R, G and B value of the Illustrator color object
-     */
+    * Gets an array representing the RGB values of an Illustrator color object. NoColor is returned as null.
+    * @param {Color} color An Illustrator color object of either type SpotColor, RGBColor, GrayColor or NoColor
+    * @returns An array [r,g,b] containing the R, G and B value of the Illustrator color object
+    */
     function aiColorToRGBArray(color){
         var r, g, b;
         if(color.typename == 'SpotColor'){
@@ -175,7 +175,7 @@ function main(){
         }
         return [r,g,b];
     }
-
+    
     function getFileDirectory(filePath) {
         if (filePath.indexOf("/") == -1) {
             return filePath.substring(0, filePath.lastIndexOf('\\'));
@@ -184,11 +184,11 @@ function main(){
             return filePath.substring(0, filePath.lastIndexOf('/'));
         }
     }
-
+    
     // Derive ai2html program settings by merging default settings and overrides.
     function initDocumentSettings(textBlockSettings) {
         var settings = extend({}, defaultSettings); // copy default settings
-
+        
         // merge settings from text block
         // TODO: consider parsing strings to booleans when relevant, (e.g. "false" -> false)
         if (textBlockSettings) {
@@ -202,23 +202,23 @@ function main(){
     function extendSettings(settings, moreSettings) {
         extend(settings, moreSettings);
     }    
-
+    
     function warn(msg) {
         warnings.push(msg);
     }
-      
+    
     function error(msg) {
         var e = new Error(msg);
         e.name = 'UserError';
         throw e;
     }
-
+    
     // display debugging message in completion alert box
     // (in debug mode)
     function message() {
         feedback.push(concatMessages(arguments));
     }
-
+    
     function concatMessages(args) {
         var msg = '', arg;
         for (var i=0; i<args.length; i++) {
@@ -238,7 +238,7 @@ function main(){
         }
         return msg;
     }
-
+    
     function formatError(e) {
         var msg;
         if (e.name == 'UserError') return e.message; // triggered by error() function
@@ -247,24 +247,24 @@ function main(){
         if (e.message) msg += ': ' + e.message;
         return msg;
     }
-
+    
     // accept inconsistent true/yes setting value
     function isTrue(val) {
         return val == 'true' || val == 'yes' || val === true;
     }
-
+    
     function stringToLines(str) {
         var empty = /^\s*$/;
         return filter(str.split(/[\r\n\x03]+/), function(line) {
             return !empty.test(line);
         });
     }
-
+    
     function forEachUsableArtboard(cb, ignoreDark) {
         var ab;
         var numAbs = doc.artboards.length;
         var regex = new RegExp('^[-]' + (ignoreDark ? '|(dark-)' : ''));
-
+        
         for (var i=0; i<numAbs; i++) {
             ab = doc.artboards[i];
             if(!regex.test(ab.name)) {
@@ -272,13 +272,13 @@ function main(){
             }
         }
     }
-
+    
     function readTextFile(path) {
         // This function used to use File#eof and File#readln(), but
         // that failed to read the last line when missing a final newline.
         return readFile(path) || '';
     }
-
+    
     function readFile(path) {
         var content = null;
         var file = new File(path);
@@ -291,15 +291,15 @@ function main(){
         }
         return content;
     }
-
+    
     function readColormap(path) {
         return JSON.parse(readTextFile(path));
     }
-
+    
     function fileExists(path) {
         return new File(path).exists;
     }
-
+    
     function straightenCurlyQuotesInsideAngleBrackets(text) {
         // This function's purpose is to fix quoted properties in HTML tags that were
         // typed into text blocks (Illustrator tends to automatically change single
@@ -311,11 +311,11 @@ function main(){
             return straightenCurlyQuotes(tag);
         });
     }
-
+    
     function straightenCurlyQuotes(str) {
         return str.replace( /[\u201C\u201D]/g , '"' ).replace( /[‘’]/g , "'" );
     }
-
+    
     function parseSettingsEntry(str) {
         var entryRxp = /^([\w-]+)\s*:\s*(.*)$/;
         var match = entryRxp.exec(trim(str));
@@ -342,17 +342,17 @@ function main(){
             settings[key] = value;
         });
     }
-  
+    
     function parseAsArray(str) {
         str = trim(str).replace( /[\s,]+/g , ',' );
         return str.length === 0 ? [] : str.split(',');
     }
-
+    
     // Import program settings and custom html, css and js code from specially
     // formatted text blocks
     function initSpecialTextBlocks() {
         var settings = {};
-
+        
         forEach(doc.textFrames, function(thisFrame) {
             var match, lines;
             if (thisFrame.lines.length > 1) {
@@ -367,12 +367,12 @@ function main(){
         });
         return settings;
     }
-
+    
     // Show alert
     function showCompletionAlert() {
         var rule = "\n================\n";
         var alertText, alertHed;
-
+        
         if (errors.length > 0) {
             alertHed = "The Script Was Unable to Finish";
         } else {
@@ -382,10 +382,10 @@ function main(){
         alertText += makeList(warnings, "Warning", "Warnings");
         alertText += makeList(feedback, "Information", "Information");
         alertText += "\n";
-
+        
         alertText += rule + "darklord v" + scriptVersion;
         alert(alertHed + alertText);
-
+        
         function makeList(items, singular, plural) {
             var list = "";
             if (items.length > 0) {
@@ -397,14 +397,15 @@ function main(){
             return list;
         }
     }
-
+    
     /**
-     * Convert any input data to a number
-     * @param {string} str - input data
-     * @param {number} def - default value if the input data don't contain numbers
-     * @return {number}
-     */
+    * Convert any input data to a number
+    * @param {string} str - input data
+    * @param {number} def - default value if the input data don't contain numbers
+    * @return {number}
+    */
     function convertToNum(str, def) {
+        if (typeof str === 'number') return str;
         // Remove unnecessary characters
         str = str.replace(/,/g, '.').replace(/[^\d.]/g, '');
         // Remove duplicate Point
@@ -413,35 +414,35 @@ function main(){
         if (isNaN(str) || str.length == 0) return parseFloat(def);
         return parseFloat(str);
     }
-
+    
     /**
-     * Collect items
-     * @param {object} obj - collection of items
-     * @param {array} arr - output array with childrens
-     */
+    * Collect items
+    * @param {object} obj - collection of items
+    * @param {array} arr - output array with childrens
+    */
     function getItems(obj, arr) {
         for (var i = 0, len = obj.length; i < len; i++) {
             var currItem = obj[i];
-                try {
+            try {
                 switch (currItem.typename) {
                     case 'GroupItem':
-                        arr.push(currItem);
-                        getItems(currItem.pageItems, arr);
-                        break;
+                    arr.push(currItem);
+                    getItems(currItem.pageItems, arr);
+                    break;
                     default:
-                        arr.push(currItem);
-                        break;
+                    arr.push(currItem);
+                    break;
                 }
             } catch (e) {}
         }
     }
-
+    
     /**
-     * Save information about locked & hidden pageItems & layers
-     * @param {object} _layers - the collection of layers
-     * @param {string} lKey - keyword for locked items
-     * @param {string} hKey - keyword for hidden items
-     */
+    * Save information about locked & hidden pageItems & layers
+    * @param {object} _layers - the collection of layers
+    * @param {string} lKey - keyword for locked items
+    * @param {string} hKey - keyword for hidden items
+    */
     function saveItemsState(_layers, lKey, hKey) {
         var allItems = [];
         for (var i = 0, len = _layers.length; i < len; i++) {
@@ -464,13 +465,13 @@ function main(){
         }
         redraw();
     }
-
+    
     /**
-     * Remove keyword from Note in Attributes panel
-     * @param {object} _layers - the collection of layers
-     * @param {string} lKey - keyword for locked items
-     * @param {string} hKey - keyword for hidden items
-     */
+    * Remove keyword from Note in Attributes panel
+    * @param {object} _layers - the collection of layers
+    * @param {string} lKey - keyword for locked items
+    * @param {string} hKey - keyword for hidden items
+    */
     function removeNote(_layers, lKey, hKey) {
         var regexp = new RegExp(lKey + '|' + hKey, 'gi');
         for (var i = 0, len = _layers.length; i < len; i++) {
@@ -488,11 +489,11 @@ function main(){
             } catch (e) {}
         }
     }
-
+    
     /**
-     * Unlock all Layers & Sublayers
-     * @param {object} _layers - the collection of layers
-     */
+    * Unlock all Layers & Sublayers
+    * @param {object} _layers - the collection of layers
+    */
     function unlockLayers(_layers) {
         for (var i = 0, len = _layers.length; i < len; i++) {
             if (_layers[i].locked) {
@@ -503,13 +504,13 @@ function main(){
             }
         }
     }
-
+    
     /**
-     * Restoring locked & hidden pageItems & layers
-     * @param {object} _layers - the collection of layers
-     * @param {string} lKey - keyword for locked items
-     * @param {string} hKey - keyword for hidden items
-     */
+    * Restoring locked & hidden pageItems & layers
+    * @param {object} _layers - the collection of layers
+    * @param {string} lKey - keyword for locked items
+    * @param {string} hKey - keyword for hidden items
+    */
     function restoreItemsState(_layers, lKey, hKey) {
         var allItems = [],
         regexp = new RegExp(lKey + '|' + hKey, 'gi');
@@ -532,13 +533,13 @@ function main(){
             }
         }
     }
-
+    
     /**
-     * Searches the document tree for a layer with the given name, starting at the given parent
-     * @param {string} layerName The name of the layer to find
-     * @param {object} parent The layer to start searching from
-     * @returns {object} The layer object or null if not found
-     */
+    * Searches the document tree for a layer with the given name, starting at the given parent
+    * @param {string} layerName The name of the layer to find
+    * @param {object} parent The layer to start searching from
+    * @returns {object} The layer object or null if not found
+    */
     function findLayer(layerName, parent) {
         var layer = null;
         if(!parent) {
@@ -558,12 +559,12 @@ function main(){
         }
         return layer;
     }
-
+    
     /**
-     * Finds the dark mode target layer for the given element. If the layer is not present, it will be created at the correct position in the document tree.
-     * @param {object} elem The element to find the dark mode target layer for
-     * @returns {object} The dark mode target layer
-     */
+    * Finds the dark mode target layer for the given element. If the layer is not present, it will be created at the correct position in the document tree.
+    * @param {object} elem The element to find the dark mode target layer for
+    * @returns {object} The dark mode target layer
+    */
     function getDarkmodeTargetLayer(elem){
         if(elem.parent.typename == "Document") {
             return elem.parent;
@@ -572,7 +573,7 @@ function main(){
         if(!targetLayer) {
             targetLayer = doc.layers.add();
             targetLayer.name = docSettings.darkmode_ab_prefix + elem.parent.name;
-            targetLayer.blendingMode = elem.parent.blendingMode
+            targetLayer.blendingMode = elem.parent.blendingMode;
             if(elem.parent.typename == "Layer") {
                 var darkTargetParent = getDarkmodeTargetLayer(elem.parent);
                 targetLayer.move(darkTargetParent, ElementPlacement.PLACEATBEGINNING);
@@ -583,12 +584,12 @@ function main(){
         }
         return targetLayer;
     }
-
+    
     /**
-     * Duplicate all items
-     * @param {object} collection - selected items on active artboard
-     * @return {array} arr - duplicated items
-     */
+    * Duplicate all items
+    * @param {object} collection - selected items on active artboard
+    * @return {array} arr - duplicated items
+    */
     function getDuplicates(collection) {
         var arr = [];
         // for (var i = 0, len = collection.length; i < len; i++) {
@@ -604,68 +605,73 @@ function main(){
         }
         return arr;
     }
-
+    
     /**
-     * Find the matching dark mode color from the color mapping using the CIEDE2000 algorithm
-     * @param {array} color an array shaped [r,g,b] containing RGB values
-     * @returns {array} An array shaped [r,g,b] containing RGB values
-     */
+    * Find the matching dark mode color from the color mapping using the CIEDE2000 algorithm
+    * @param {array} color an array shaped [r,g,b] containing RGB values
+    * @returns {array} An array shaped [r,g,b] containing RGB values
+    */
     function getDarkmodeColor(color){
         var rgb, darkColor;
         rgb = darkColor = aiColorToRGBArray(color);
         if (rgb == null){
             return color;
         }
-
+        
         if (rgb in documentColorMapping) {
             darkColor = documentColorMapping[rgb];
         }
         else {
+            var similarColorFound = false;
             for (var i = 0; i < colorMapping.length; i++) {
                 var c = hexToRGB(colorMapping[i].light);
                 var diff = deltaE00(c, rgb);
-                if (diff <= tolerance) {
+                if (diff <= convertToNum(docSettings.tolerance)) {
                     darkColor = hexToRGB(colorMapping[i].dark);
+                    similarColorFound = true;
                 }
+            }
+            if(!similarColorFound && isTrue(docSettings.dynamic_colors)) {
+                darkColor = rotateHue(invertRGB(rgb), 180);
             }
             documentColorMapping[rgb] = darkColor;
         }
-
+        
         if (color.typename == 'SpotColor') {
             return newTint(darkColor, 1 - (color.tint / 100));
         }
         return newRGBColor(darkColor);
     }
-
+    
     /**
-     * Applies the dark mode color map
-     * @param {array} collection - the collection with objects for applying the dark mode color mapping to
-     */
+    * Applies the dark mode color map
+    * @param {array} collection - the collection with objects for applying the dark mode color mapping to
+    */
     function recolorArtwork(collection){
         for (var i = 0; i < collection.length; i++){
             try {
                 switch (collection[i].typename) {
                     case 'TextFrame':
-                        if(collection[i].textRange.length > 0) {
-                            var ps = collection[i].textRange.paragraphs;
-                            for (var j = 0; j < ps.length; j++) {
-                                if(ps[j].characters.length > 0){
-                                    ps[j].fillColor = getDarkmodeColor(ps[j].fillColor);
-                                    ps[j].strokeColor = getDarkmodeColor(ps[j].strokeColor);
-                                }
+                    if(collection[i].textRange.length > 0) {
+                        var ps = collection[i].textRange.paragraphs;
+                        for (var j = 0; j < ps.length; j++) {
+                            if(ps[j].characters.length > 0){
+                                ps[j].fillColor = getDarkmodeColor(ps[j].fillColor);
+                                ps[j].strokeColor = getDarkmodeColor(ps[j].strokeColor);
                             }
                         }
-                        break;
+                    }
+                    break;
                     case 'PathItem':
-                        collection[i].fillColor = getDarkmodeColor(collection[i].fillColor);
-                        collection[i].strokeColor = getDarkmodeColor(collection[i].strokeColor);
-                        break;
+                    collection[i].fillColor = getDarkmodeColor(collection[i].fillColor);
+                    collection[i].strokeColor = getDarkmodeColor(collection[i].strokeColor);
+                    break;
                     case 'CompoundPathItem':
-                        recolorArtwork(collection[i].pathItems);
-                        break;
+                    recolorArtwork(collection[i].pathItems);
+                    break;
                     case 'GroupItem':
-                        recolorArtwork(collection[i].pageItems);
-                        break;
+                    recolorArtwork(collection[i].pageItems);
+                    break;
                 }
             }
             catch(e){
@@ -673,35 +679,39 @@ function main(){
             }
         }
     }
-
+    
     /**
-     * Converts a HEX RGB string to decimal RGB values
-     * @param {string} hex A HEX Color string #RRGGBB or RRBBGG
-     * @returns {array} An array shaped [r,g,b] containing decimal RGB color values
-     */
+    * Converts a HEX RGB string to decimal RGB values
+    * @param {string} hex A HEX color string #RRGGBB, RRBBGG, #RGB or RGB
+    * @returns {array} An array shaped [r,g,b] containing decimal RGB color values
+    */
     function hexToRGB(hex) {
+        hex = hex.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i, function(m, r, g, b) {
+            return r + r + g + g + b + b;
+        });
+        
         var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         return result ? [
             parseInt(result[1], 16),
             parseInt(result[2], 16),
             parseInt(result[3], 16)
-         ] : null;
+        ] : null;
     }
     
     function componentToHex(c) {
         var hex = c.toString(16);
         return hex.length == 1 ? "0" + hex : hex;
     }
-
+    
     function rgbToHex(rgb) {
         return componentToHex(rgb[0]) + componentToHex(rgb[1]) + componentToHex(rgb[2]);
     }
-
+    
     /**
-     * A function to convert RGB color values to LAB color values
-     * @param {array} rgb An array shaped [r,g,b] containing RGB values
-     * @returns An array shaped [l,a,b] containing LAB values
-     */
+    * A function to convert RGB color values to LAB color values
+    * @param {array} rgb An array shaped [r,g,b] containing RGB values
+    * @returns An array shaped [l,a,b] containing LAB values
+    */
     function rgbToLab(rgb){
         var r = rgb[0] / 255, g = rgb[1] / 255, b = rgb[2] / 255, x, y, z;
         r = (r > 0.04045) ? Math.pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
@@ -715,12 +725,12 @@ function main(){
         z = (z > 0.008856) ? Math.pow(z, 1/3) : (7.787 * z) + 16/116;
         return [(116 * y) - 16, 500 * (x - y), 200 * (y - z)]
     }
-
+    
     /**
-     * A function to convert LAB color values to RGB color values
-     * @param {array} lab An array shaped [l,a,b] containing LAB values
-     * @returns An array shaped [r,g,b] containing RGB values
-     */
+    * A function to convert LAB color values to RGB color values
+    * @param {array} lab An array shaped [l,a,b] containing LAB values
+    * @returns An array shaped [r,g,b] containing RGB values
+    */
     function labToRgb(lab) {
         var y = (lab[0] + 16) / 116, x = lab[1] / 500 + y, z = y - lab[2] / 200, r, g, b;
         x = 0.95047 * ((x * x * x > 0.008856) ? x * x * x : (x - 16/116) / 7.787);
@@ -734,13 +744,13 @@ function main(){
         b = (b > 0.0031308) ? (1.055 * Math.pow(b, 1/2.4) - 0.055) : 12.92 * b;
         return [Math.max(0, Math.min(1, r)) * 255, Math.max(0, Math.min(1, g)) * 255, Math.max(0, Math.min(1, b)) * 255];
     }
-
+    
     /**
-     * CIE Delta E 2000 Color-Difference algorithm (CIEDE2000)
-     * @param {array} rgb1 An array shaped [r,g,b] containing RGB values
-     * @param {array} rgb2 An array shaped [r,g,b] containing RGB values
-     * @returns The color difference
-     */
+    * CIE Delta E 2000 Color-Difference algorithm (CIEDE2000)
+    * @param {array} rgb1 An array shaped [r,g,b] containing RGB values
+    * @param {array} rgb2 An array shaped [r,g,b] containing RGB values
+    * @returns The color difference
+    */
     function deltaE00(rgb1,rgb2)
     {
         /**
@@ -750,56 +760,56 @@ function main(){
         */
         var lab1 = rgbToLab(rgb1);
         var lab2 = rgbToLab(rgb2);
-
+        
         // Get L,a,b values for color 1
         var L1 = lab1[0];
         var a1 = lab1[1];
         var b1 = lab1[2];
-
+        
         // Get L,a,b values for color 2
         var L2 = lab2[0];
         var a2 = lab2[1];
         var b2 = lab2[2];
-
+        
         // Weight factors
         var kL = 1;
         var kC = 1;
         var kH = 1;
-
+        
         /**
         * Step 1: Calculate C1p, C2p, h1p, h2p
         */
         var C1 = Math.sqrt(Math.pow(a1, 2) + Math.pow(b1, 2)) //(2)
         var C2 = Math.sqrt(Math.pow(a2, 2) + Math.pow(b2, 2)) //(2)
-
+        
         var a_C1_C2 = (C1+C2)/2.0; //(3)
-
+        
         var G = 0.5 * (1 - Math.sqrt(Math.pow(a_C1_C2 , 7.0) / (Math.pow(a_C1_C2, 7.0) + Math.pow(25.0, 7.0)))); //(4)
-
+        
         var a1p = (1.0 + G) * a1; //(5)
         var a2p = (1.0 + G) * a2; //(5)
-
+        
         var C1p = Math.sqrt(Math.pow(a1p, 2) + Math.pow(b1, 2)); //(6)
         var C2p = Math.sqrt(Math.pow(a2p, 2) + Math.pow(b2, 2)); //(6)
-
+        
         var h1p = hp_f(b1, a1p); //(7)
         var h2p = hp_f(b2, a2p); //(7)
-
+        
         /**
         * Step 2: Calculate dLp, dCp, dHp
         */
         var dLp = L2 - L1; //(8)
         var dCp = C2p - C1p; //(9)
-
+        
         var dhp = dhp_f(C1,C2, h1p, h2p); //(10)
         var dHp = 2*Math.sqrt(C1p*C2p)*Math.sin(radians(dhp)/2.0); //(11)
-
+        
         /**
         * Step 3: Calculate CIEDE2000 Color-Difference
         */
         var a_L = (L1 + L2) / 2.0; //(12)
         var a_Cp = (C1p + C2p) / 2.0; //(13)
-
+        
         var a_hp = a_hp_f(C1,C2,h1p,h2p); //(14)
         var T = 1-0.17*Math.cos(radians(a_hp-30))+0.24*Math.cos(radians(2*a_hp))+
         0.32*Math.cos(radians(3*a_hp+6))-0.20*Math.cos(radians(4*a_hp-63)); //(15)
@@ -815,18 +825,18 @@ function main(){
         (dHp / (SH * kH))); //(22)
         return dE;
     }
-     
+    
     /**
-     * CIEDE2000 HELPER FUNCTIONS
-     */
+    * CIEDE2000 HELPER FUNCTIONS
+    */
     function degrees(n) {
         return n*(180/Math.PI);
     }
-
+    
     function radians(n) {
         return n*(Math.PI/180);
     }
-
+    
     function hp_f(x,y) //(7)
     {
         if(x === 0 && y === 0) {
@@ -842,7 +852,7 @@ function main(){
             }
         }
     }
-
+    
     function dhp_f(C1, C2, h1p, h2p) //(10)
     {
         if(C1*C2 === 0){
@@ -861,7 +871,7 @@ function main(){
             throw(new Error());
         }
     }
-
+    
     function a_hp_f(C1, C2, h1p, h2p) { //(14)
         if(C1*C2 === 0) {
             return h1p+h2p
@@ -879,14 +889,14 @@ function main(){
             throw(new Error());
         }
     }
-
+    
     function makeDarker(rgb, percentage) {
         var lab = rgbToLab(rgb);
         lab[0] -= lab[0] * percentage;
         lab[0] = lab[0] < 0 ? 0 : lab[0];
         return labToRgb(lab);
     }
-
+    
     function makeBrighter(rgb, percentage) {
         var lab = rgbToLab(rgb);
         lab[0] += lab[0] * percentage;
@@ -901,14 +911,14 @@ function main(){
             rgb[2] + (255 - rgb[2]) * tint
         ]);
     }
-
+    
     /**
-     * Factory method for the Illustrator RGBColor class
-     * @param {number} r The red value between 0 and 255
-     * @param {number} g The green value between 0 and 255
-     * @param {number} b The blie value between 0 and 255
-     * @returns An Illustrator RGBColor object
-     */
+    * Factory method for the Illustrator RGBColor class
+    * @param {number} r The red value between 0 and 255
+    * @param {number} g The green value between 0 and 255
+    * @param {number} b The blie value between 0 and 255
+    * @returns An Illustrator RGBColor object
+    */
     function newRGBColor(rgb) {
         var color = new RGBColor();
         color.red = rgb[0];
@@ -916,31 +926,31 @@ function main(){
         color.blue = rgb[2];
         return color;
     }
-
+    
     /**
-     * Duplicate the selected artboard. Based on the idea of @Silly-V
-     * @param {number} thisAbIdx - current artboard index
-     * @param {object} items - collection of items on the artboard
-     * @param {number} spacing - distance between copies
-     * @param {string} prefix - copy name prefix
-     * @param {number} counter - current copy number
-     */
-     function duplicateArtboard(thisAbIdx, items, spacing, prefix) {
+    * Duplicate the selected artboard. Based on the idea of @Silly-V
+    * @param {number} thisAbIdx - current artboard index
+    * @param {object} items - collection of items on the artboard
+    * @param {number} spacing - distance between copies
+    * @param {string} prefix - copy name prefix
+    * @param {number} counter - current copy number
+    */
+    function duplicateArtboard(thisAbIdx, items, spacing, prefix) {
         var thisAb = doc.artboards[thisAbIdx],
-            thisAbRect = thisAb.artboardRect,
-            abHeight = thisAbRect[1] - thisAbRect[3];
-
+        thisAbRect = thisAb.artboardRect,
+        abHeight = thisAbRect[1] - thisAbRect[3];
+        
         var newAb = doc.artboards.add(thisAbRect);
-
+        
         newAb.artboardRect = [
             thisAbRect[0],
             thisAbRect[3] - spacing,
             thisAbRect[2],
             thisAbRect[3] - spacing - abHeight
         ];
-
+        
         newAb.name = prefix + thisAb.name;
-
+        
         var docCoordSystem = CoordinateSystem.DOCUMENTCOORDINATESYSTEM,
         abCoordSystem = CoordinateSystem.ARTBOARDCOORDINATESYSTEM,
         isDocCoords = app.coordinateSystem == docCoordSystem,
@@ -961,85 +971,166 @@ function main(){
             newAb.artboardRect[0] - 1, // left
             newAb.artboardRect[2] - newAb.artboardRect[0] + 2, // width
             newAb.artboardRect[1] - newAb.artboardRect[3] + 2 // height
-        );
-        bgRect.name = "bg_" + thisAb.name;
-
-        var rgb = hexToRGB(docSettings.darkmode_background ? docSettings.darkmode_background : "1F1E1C");
-        bgRect.strokeColor = new NoColor();
-        bgRect.fillColor = newRGBColor(rgb);
+            );
+            bgRect.name = "bg_" + thisAb.name;
+            
+            var rgb = hexToRGB(docSettings.darkmode_background ? docSettings.darkmode_background : "1F1E1C");
+            bgRect.strokeColor = new NoColor();
+            bgRect.fillColor = newRGBColor(rgb);
+            
+            recolorArtwork(dupArr);
+            
+            // Move copied items to the new artboard
+            for (var i = 0, dLen = dupArr.length; i < dLen; i++) {
+                var pos = isDocCoords ? dupArr[i].position : doc.convertCoordinate(dupArr[i].position, docCoordSystem, abCoordSystem);
+                dupArr[i].position = [pos[0], pos[1] - (abHeight + spacing)];
+            }
+        }
         
-        recolorArtwork(dupArr);
-
-        // Move copied items to the new artboard
-        for (var i = 0, dLen = dupArr.length; i < dLen; i++) {
-            var pos = isDocCoords ? dupArr[i].position : doc.convertCoordinate(dupArr[i].position, docCoordSystem, abCoordSystem);
-            dupArr[i].position = [pos[0], pos[1] - (abHeight + spacing)];
+        /**
+        * Clean up a artboard name by removing light mode prefixes and suffixes
+        * @param {string} name The artboard name to clean up
+        * @returns {string} The cleaned up artboard name
+        */
+        function cleanUpArtboardName(name) {
+            return name.replace(/[-_]?light[-_]?/gi, "");
         }
-    }
-
-    function deleteArtboardContents(abIndex) {
-        doc.artboards.setActiveArtboardIndex(abIndex);
-        doc.selectObjectsOnActiveArtboard();
-        var abItems = doc.selection;
-
-        for (var i = 0; i < abItems.length; i++){
-            abItems[i].remove();
+        
+        /**
+        * Invert a rgb color
+        * @param {array} rgb An array shaped [r,g,b] containing RGB values
+        * @returns An array shaped [r,g,b] containing RGB values
+        * @see https://stackoverflow.com/questions/35969656/how-can-i-generate-the-opposite-color-according-to-current-color
+        */
+        function invertRGB(rgb) {
+            return [255 - rgb[0], 255 - rgb[1], 255 - rgb[2]];
         }
-    }
-
-    function runDarklord() {
-        // check for existing darkmode artwork
-        var darkmodeArtboards = [];
-        forEachUsableArtboard(function(ab,i){
-            if(ab.name.indexOf(docSettings.darkmode_ab_prefix) >= 0){
-                darkmodeArtboards.push(i);
+        
+        /**
+        * Rotate the hue of a rgb color
+        * @param {array} rgb An array shaped [r,g,b] containing RGB values
+        * @param {number} angle The angle to rotate the hue by
+        * @returns An array shaped [r,g,b] containing RGB values#
+        * @see adapted from http://codepad.org/Km9TfabU
+        */
+        function rotateHue(rgb, angle) {
+            var r = rgb[0],
+            g = rgb[1],
+            b = rgb[2];
+            angle = ((parseInt(angle) % 360) + 360) % 360;
+            
+            // Just remember this is the identity matrix for
+            const matrix = [
+                1,
+                0,
+                0, // Reds
+                0,
+                1,
+                0, // Greens
+                0,
+                0,
+                1, // Blues
+            ];
+            
+            // Luminance coefficients.
+            const lum_r = 0.2126;
+            const lum_g = 0.7152;
+            const lum_b = 0.0722;
+            
+            // Hue rotate coefficients.
+            const hue_rotate_r = 0.143;
+            const hue_rotate_g = 0.14;
+            const hue_rotate_b = 0.283;
+            
+            const cos = Math.cos((angle * Math.PI) / 180);
+            const sin = Math.sin((angle * Math.PI) / 180);
+            
+            matrix[0] = lum_r + (1 - lum_r) * cos - lum_r * sin;
+            matrix[1] = lum_g - lum_g * cos - lum_g * sin;
+            matrix[2] = lum_b - lum_b * cos + (1 - lum_b) * sin;
+            
+            matrix[3] = lum_r - lum_r * cos + hue_rotate_r * sin;
+            matrix[4] = lum_g + (1 - lum_g) * cos + hue_rotate_g * sin;
+            matrix[5] = lum_b - lum_b * cos - hue_rotate_b * sin;
+            
+            matrix[6] = lum_r - lum_r * cos - (1 - lum_r) * sin;
+            matrix[7] = lum_g - lum_g * cos + lum_g * sin;
+            matrix[8] = lum_b + (1 - lum_b) * cos + lum_b * sin;
+            
+            function clamp(value) {
+                return Math.max(0, Math.min(255, value));
             }
-        });
-
-        if(darkmodeArtboards.length > 0){
-            if(!confirm("Warning!\nProceeding recreates all darkmode artwork, discarding all changes made to the previously generated darkmode versions of your graphics.\n\nDo you want to continue?")) {
-                error("Cancelled by user");
-                return;
-            }
-            // reset start time after awaiting user input
-            startTime = +new Date();
-            for(var i = darkmodeArtboards.length - 1; i >= 0; i--){
-                deleteArtboardContents(darkmodeArtboards[i]);
-                activeDocument.artboards[darkmodeArtboards[i]].remove();
-            }
-            for(var i = doc.layers.length - 1; i >= 0; i--){
-                if(doc.layers[i].name.indexOf(docSettings.darkmode_ab_prefix) == 0){
-                    doc.layers[i].remove();
-                }
-            }
+            
+            const rr = clamp(matrix[0] * r + matrix[1] * g + matrix[2] * b);
+            const gg = clamp(matrix[3] * r + matrix[4] * g + matrix[5] * b);
+            const bb = clamp(matrix[6] * r + matrix[7] * g + matrix[8] * b);
+            
+            return [rr, gg, bb];
         }
-
-        var userView = doc.views[0].screenMode;
-
-        forEachUsableArtboard(function(ab,i){
-            doc.artboards.setActiveArtboardIndex(i);
-
-            doc.selection = null;
-            removeNote(doc.layers, lKey, hKey); // Сlear Note after previous run
-            saveItemsState(doc.layers, lKey, hKey);
-            unlockLayers(doc.layers);
-
-            // Copy Artwork
+        
+        function deleteArtboardContents(abIndex) {
+            doc.artboards.setActiveArtboardIndex(abIndex);
             doc.selectObjectsOnActiveArtboard();
             var abItems = doc.selection;
-            try {
-                duplicateArtboard(i, abItems, offset, docSettings.darkmode_ab_prefix, i)
-            } catch (e) {
-                alert(e);
+            
+            for (var i = 0; i < abItems.length; i++){
+                abItems[i].remove();
             }
-
-            // Restore locked & hidden pageItems
-            restoreItemsState(doc.layers, lKey, hKey);
-            doc.selection = null;
-            doc.views[0].screenMode = userView;
-            app.userInteractionLevel = UserInteractionLevel.DISPLAYALERTS;
-        });
+        }
+        
+        function runDarklord() {
+            // check for existing darkmode artwork
+            var darkmodeArtboards = [];
+            forEachUsableArtboard(function(ab,i){
+                if(ab.name.indexOf(docSettings.darkmode_ab_prefix) >= 0){
+                    darkmodeArtboards.push(i);
+                }
+            });
+            
+            if(darkmodeArtboards.length > 0){
+                if(!confirm("Warning!\nProceeding recreates all darkmode artwork, discarding all changes made to the previously generated darkmode versions of your graphics.\n\nDo you want to continue?")) {
+                    error("Cancelled by user");
+                    return;
+                }
+                // reset start time after awaiting user input
+                startTime = +new Date();
+                for(var i = darkmodeArtboards.length - 1; i >= 0; i--){
+                    deleteArtboardContents(darkmodeArtboards[i]);
+                    activeDocument.artboards[darkmodeArtboards[i]].remove();
+                }
+                for(var i = doc.layers.length - 1; i >= 0; i--){
+                    if(doc.layers[i].name.indexOf(docSettings.darkmode_ab_prefix) == 0){
+                        doc.layers[i].remove();
+                    }
+                }
+            }
+            
+            var userView = doc.views[0].screenMode;
+            
+            forEachUsableArtboard(function(ab,i){
+                doc.artboards.setActiveArtboardIndex(i);
+                
+                doc.selection = null;
+                removeNote(doc.layers, lKey, hKey); // Сlear Note after previous run
+                saveItemsState(doc.layers, lKey, hKey);
+                unlockLayers(doc.layers);
+                
+                // Copy Artwork
+                doc.selectObjectsOnActiveArtboard();
+                var abItems = doc.selection;
+                try {
+                    duplicateArtboard(i, abItems, offset, docSettings.darkmode_ab_prefix, i)
+                } catch (e) {
+                    alert(e);
+                }
+                
+                // Restore locked & hidden pageItems
+                restoreItemsState(doc.layers, lKey, hKey);
+                doc.selection = null;
+                doc.views[0].screenMode = userView;
+                app.userInteractionLevel = UserInteractionLevel.DISPLAYALERTS;
+            });
+        }
     }
-}
-
-main();
+    
+    main();
